@@ -15,7 +15,7 @@ from lib import assert_edges
 
 train_path = 'UD_English-EWT/en_ewt-ud-train.conllu'
 test_path = 'UD_English-EWT/en_ewt-ud-test.conllu'
-n_epoch = 1
+n_epoch = 20
 
 
 def _main():
@@ -30,8 +30,9 @@ def _main():
     train_data, valid_data = train_test_split(train_data, test_size=0.25)
     train_len = len(train_data)
     valid_len = len(valid_data)
-    train_inputs, train_tags, train_edges, train_n_vertices, _ = get_info(train_data)
-    valid_inputs, valid_tags, valid_edges, valid_n_vertices, _ = get_info(valid_data)
+    train_inputs, train_tags, train_edges, train_n_vertices, train_labels = get_info(train_data)
+    valid_inputs, valid_tags, valid_edges, valid_n_vertices, valid_labels = get_info(valid_data)
+    del train_data, valid_data, test_data, train_labels, valid_labels
 
     device = torch.device("cuda")
     model = Model(word_size, tag_size)
@@ -57,11 +58,14 @@ def _main():
             tags = tags.to(device)
             # edge_labels = get_edge_labels(data)
             optimizer.zero_grad()
-            head, dependent, alpha1, alpha2, alpha3 = model(inputs, tags)
-            loss = layer_wise_loss(alpha1, alpha2, alpha3, n_vertices, edges)
+            #head, dependent, alpha1, alpha2, alpha3 = model(inputs, tags)
+            head, dependent, alpha1, alpha2 = model(inputs, tags)
+            #loss = layer_wise_loss(alpha1, alpha2, alpha3, n_vertices, edges)
+            loss = layer_wise_loss(alpha1, alpha2, n_vertices, edges)
             loss.backward()
             optimizer.step()
-            mst_edges = MST(alpha3)
+            #mst_edges = MST(alpha3)
+            mst_edges = MST(alpha2)
             if assert_edges(edges, mst_edges):
                 train_acc_num += 1.0
             train_total_loss += loss
@@ -77,9 +81,12 @@ def _main():
             inputs.to(device)
             tags.to(device)
             optimizer.zero_grad()
-            head, dependent, alpha1, alpha2, alpha3 = model(inputs, tags)
-            loss = layer_wise_loss(alpha1, alpha2, alpha3, n_vertices, edges)
-            mst_edges = MST(alpha3)
+            #head, dependent, alpha1, alpha2, alpha3 = model(inputs, tags)
+            head, dependent, alpha1, alpha2 = model(inputs, tags)
+            #loss = layer_wise_loss(alpha1, alpha2, alpha3, n_vertices, edges)
+            loss = layer_wise_loss(alpha1, alpha2, n_vertices, edges)
+            #mst_edges = MST(alpha3)
+            mst_edges = MST(alpha2)
             if assert_edges(edges, mst_edges):
                 valid_acc_num += 1.0
             valid_total_loss += loss
@@ -111,6 +118,8 @@ def _main():
     plt.title('accuracy')
     plt.savefig("results/accuracy_image.png")
 
+    os.makedirs('models', exist_ok=True)
+    torch.save(model.state_dict(), 'models/model.pth')
 
 if __name__ == '__main__':
     _main()

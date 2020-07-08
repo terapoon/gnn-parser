@@ -129,15 +129,17 @@ def get_edge_labels(data):
     return torch.tensor(labels)
 
 
-def layer_wise_loss(alpha1, alpha2, alpha3, n_vertices, edges):
+#def layer_wise_loss(alpha1, alpha2, alpha3, n_vertices, edges):
+def layer_wise_loss(alpha1, alpha2, n_vertices, edges):
     l1 = 0
     l2 = 0
-    l3 = 0
+    #l3 = 0
     for e in edges:
         l1 += torch.log(alpha1[e[0]][e[1]]+1e-12)
         l2 += torch.log(alpha2[e[0]][e[1]]+1e-12)
-        l3 += torch.log(alpha3[e[0]][e[1]]+1e-12)
-    return -(l1 + l2 + l3) / n_vertices
+        #l3 += torch.log(alpha3[e[0]][e[1]]+1e-12)
+    #return -(l1 + l2 + l3) / n_vertices
+    return -(l1 + l2) / n_vertices
 
 
 def MST(alpha):

@@ -50,7 +50,7 @@ class Encoder(nn.Module):
 
 
 class SynchronizedSoftGNN(nn.Module):
-    def __init__(self, input_dim, device="cuda"):
+    def __init__(self, input_dim):
         super(SynchronizedSoftGNN, self).__init__()
         self.input_dim = input_dim
         self.agg_weight_head = nn.Parameter(torch.rand(self.input_dim, self.input_dim))
@@ -58,13 +58,10 @@ class SynchronizedSoftGNN(nn.Module):
         self.comb_weight_head = nn.Parameter(torch.rand(self.input_dim, self.input_dim))
         self.comb_weight_dependent = nn.Parameter(torch.rand(self.input_dim, self.input_dim))
         self.LeakyReLU = nn.LeakyReLU(0.1)
-	self.device = device
 
     def _aggregate(self, head, dependent, alpha):
-        head_agg = torch.zeros(head.shape)
-	head_agg.to(device)
-        dependency_agg = torch.zeros(dependent.shape)
-	dependency_agg.to(device)
+        head_agg = torch.zeros(head.shape).cuda()
+        dependency_agg = torch.zeros(dependent.shape).cuda()
         n_vertices = len(alpha)
         for i in range(n_vertices):
             for j in range(n_vertices):
@@ -110,19 +107,20 @@ class GNNLayer(nn.Module):
         self.input_dim = input_dim
         self.transprob1 = TransProb(self.input_dim)
         self.transprob2 = TransProb(self.input_dim)
-        self.transprob3 = TransProb(self.input_dim)
+        #self.transprob3 = TransProb(self.input_dim)
         self.gnn1 = SynchronizedSoftGNN(self.input_dim)
         self.gnn2 = SynchronizedSoftGNN(self.input_dim)
-        self.gnn3 = SynchronizedSoftGNN(self.input_dim)
+        #self.gnn3 = SynchronizedSoftGNN(self.input_dim)
 
     def forward(self, head, dependent):
         alpha1 = self.transprob1(head, dependent)
         head, dependent = self.gnn1(head, dependent, alpha1)
         alpha2 = self.transprob2(head, dependent)
         head, dependent = self.gnn2(head, dependent, alpha2)
-        alpha3 = self.transprob3(head, dependent)
-        head, dependent = self.gnn3(head, dependent, alpha3)
-        return head, dependent, alpha1, alpha2, alpha3
+        #alpha3 = self.transprob3(head, dependent)
+        #head, dependent = self.gnn3(head, dependent, alpha3)
+        #return head, dependent, alpha1, alpha2, alpha3
+        return head, dependent, alpha1, alpha2
 
 
 class Model(nn.Module):
@@ -156,7 +154,9 @@ class Model(nn.Module):
         tag_embeds = self.tag_embedding(tag)
         embeds = torch.cat((word_embeds, tag_embeds), 2)
         head, dependent = self.encoder(embeds)
-        head, dependent, alpha1, alpha2, alpha3 = self.gnn_layer(head, dependent)
+        #head, dependent, alpha1, alpha2, alpha3 = self.gnn_layer(head, dependent)
+        head, dependent, alpha1, alpha2 = self.gnn_layer(head, dependent)
         # RelMLP layer
         # tag = self.rel_nlp(...)
-        return head, dependent, alpha1, alpha2, alpha3
+        #return head, dependent, alpha1, alpha2, alpha3
+        return head, dependent, alpha1, alpha2
