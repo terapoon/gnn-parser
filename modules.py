@@ -50,7 +50,7 @@ class Encoder(nn.Module):
 
 
 class SynchronizedSoftGNN(nn.Module):
-    def __init__(self, input_dim):
+    def __init__(self, input_dim, device="cuda"):
         super(SynchronizedSoftGNN, self).__init__()
         self.input_dim = input_dim
         self.agg_weight_head = nn.Parameter(torch.rand(self.input_dim, self.input_dim))
@@ -58,10 +58,13 @@ class SynchronizedSoftGNN(nn.Module):
         self.comb_weight_head = nn.Parameter(torch.rand(self.input_dim, self.input_dim))
         self.comb_weight_dependent = nn.Parameter(torch.rand(self.input_dim, self.input_dim))
         self.LeakyReLU = nn.LeakyReLU(0.1)
+	self.device = device
 
     def _aggregate(self, head, dependent, alpha):
         head_agg = torch.zeros(head.shape)
+	head_agg.to(device)
         dependency_agg = torch.zeros(dependent.shape)
+	dependency_agg.to(device)
         n_vertices = len(alpha)
         for i in range(n_vertices):
             for j in range(n_vertices):

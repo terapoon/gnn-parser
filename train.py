@@ -33,7 +33,7 @@ def _main():
     train_inputs, train_tags, train_edges, train_n_vertices, _ = get_info(train_data)
     valid_inputs, valid_tags, valid_edges, valid_n_vertices, _ = get_info(valid_data)
 
-    device = torch.device("cpu")
+    device = torch.device("cuda")
     model = Model(word_size, tag_size)
     model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.002, betas=(0.9, 0.9))
